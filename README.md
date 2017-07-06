@@ -1,2 +1,2 @@
 # SIMBA_QUIC_Proxy
-SIMBA QUIC Proxy for CryptoChat Demonstration
+SIMBA QUIC Proxy For CryptoChat Demonstration
