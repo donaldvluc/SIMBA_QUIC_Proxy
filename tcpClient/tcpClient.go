@@ -1,15 +1,15 @@
 // ======================================================================================
-// tcpClient.go  :  Creates a TCP connection to the TCP server on quic-proxy-client.go
+// tcpClient.go  :  Creates a TCP connection to the TCP server on quic-proxy-client.go.
 // Author        :  Donald Luc
-// Date          :  July 6th, 2017
+// Date          :  July 7th, 2017
 // ======================================================================================
 
 
-// Package       :
+/* Package */
 package main
 
 
-// Imports       :
+/* Imports */
 import (
 	"bufio"
 	"errors"
@@ -20,14 +20,14 @@ import (
 )
 
 
-// Constants     :
+/* Constants */
 const (
 	IP   = "127.0.0.1"
 	PORT = ":8686"
 )
 
 
-// Main          :
+/* main */
 func main() {
 	log.Println("TCP Client '" + IP + PORT + "':")
 	err := tcpClient()
@@ -37,12 +37,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Println("TCP client is complete")
+	log.Println("TCP Client is complete")
 	os.Exit(0)
 }
 
 
-// tcpClient     :
+/* tcpClient */
 func tcpClient() (error) {
 	log.Println("Resolving remote server address...")
 	addr, err := net.ResolveTCPAddr("tcp", IP+PORT)
@@ -54,7 +54,7 @@ func tcpClient() (error) {
 	if err != nil { return errors.New("Dial Failed: " + err.Error()) }
 
 	log.Println("Writing to remote server...")
-	log.Println("New Client Message (or type \"QUIT\"):")
+	log.Println("Please Type New Client Message:")
 	reader := bufio.NewReader(os.Stdin)
 
 	msg, _ := reader.ReadString('\n')
@@ -63,7 +63,6 @@ func tcpClient() (error) {
 	_, err = conn.Write([]byte(msg))
 	if err != nil { return errors.New("Write Failed: " + err.Error()) }
 
-	log.Println("TCP client successfully sent '" + msg + "'")
-
+	log.Println("TCP Client successfully sent '" + msg + "'")
 	return nil
 }
