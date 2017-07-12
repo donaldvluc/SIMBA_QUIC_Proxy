@@ -54,15 +54,22 @@ func tcpClient() (error) {
 	if err != nil { return errors.New("Dial Failed: " + err.Error()) }
 
 	log.Println("Writing to remote server...")
+	return writeHandler(conn)
+}
+
+
+/* writeHandler */
+func writeHandler(conn net.Conn) (error) {
+	// Read user message to send to server.
 	log.Println("Please Type New Client Message:")
 	reader := bufio.NewReader(os.Stdin)
-
 	msg, _ := reader.ReadString('\n')
-	msg = strings.Trim(msg, "\n ")
 
-	_, err = conn.Write([]byte(msg))
+	// Send user message to server.
+	_, err := conn.Write([]byte(msg))
 	if err != nil { return errors.New("Write Failed: " + err.Error()) }
 
-	log.Println("TCP Client successfully sent '" + msg + "'")
+	msg = strings.Trim(msg, "\n ")
+	log.Println("TCP Client successfully sent data")
 	return nil
 }

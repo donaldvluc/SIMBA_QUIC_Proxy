@@ -12,20 +12,21 @@ package main
 
 /* Imports */
 import (
-//	"bufio"
+	// General
+	"bufio"
 	"errors"
 	"log"
 	"net"
 	"os"
-//	"strings"
+	"strings"
 
-
-	"io"
-	"math/big"
+	// QUIC
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+
+	"math/big"
 	"encoding/pem"
 
 	quic "github.com/lucas-clemente/quic-go"
@@ -43,18 +44,18 @@ const (
 func main() {
 	log.Println("Setting up network proxy with QUIC Server and TCP Client...")
 
-	// Phase 1 : QUIC Server
-	log.Println("PHASE 1 : QUIC SERVER ===========================")
+	// Phase 3 : QUIC Server
+	log.Println("PHASE 3 : QUIC SERVER =====================================")
 
 	msg, err := quicServer()
 	if err != nil {
 		log.Println("QUIC Server Error -->", err)
 		os.Exit(1)
 	}
-	log.Println("QUIC Server is complete")
+	log.Println("QUIC Server completed setup...")
 
-	// Phase 2 : TCP Client
-	log.Println("PHASE 2 : TCP CLIENT  ===========================")
+	// Phase 4 : TCP Client
+	log.Println("PHASE 4 : TCP CLIENT  =====================================")
 
 	log.Println("TCP Client '" + TCP_ADDR + "':")
 	err = tcpClient(msg)
@@ -62,7 +63,7 @@ func main() {
 		log.Println("TCP Client Error -->", err)
 		os.Exit(1)
 	}
-	log.Println("TCP Client is complete")
+	log.Println("TCP Client completed setup...")
 
 	log.Println("Closing QUIC Proxy...")
 	os.Exit(0)
@@ -80,35 +81,30 @@ func quicServer() (string, error) {
 	listener, err := quic.ListenAddr(QUIC_ADDR, config)
 	if err != nil { return "", errors.New("QUIC ListenAddr Failed --> " + err.Error()) }
 
+	return readHandler(listener)
+}
+
+
+/* readHandler */
+func readHandler(listener quic.Listener) (string, error) {
 	log.Println("Accepting all incoming QUIC connections...")
 	session, err := listener.Accept()
 	if err != nil { return "", errors.New("QUIC Accept Failed --> " + err.Error()) }
 
-	log.Println("Accepting QUIC stream...")
 	stream, err := session.AcceptStream()
 	if err != nil { return "", errors.New("QUIC AcceptStream Failed --> " + err.Error()) }
 
-	log.Println("Handling QUIC stream...")
-	msg, err := handleStream(stream)
-	if err != nil { return "", errors.New("QUIC handleStream Failed --> " + err.Error()) }
-	
-	log.Println("QUIC Server successfully received '" + msg + "'")
+	reader := bufio.NewReader(stream)
+	msg, err := reader.ReadString('\n')
+	if err != nil { return "", errors.New("ReadString Failed --> " + err.Error()) }
+
+	trimMsg := strings.Trim(msg, "\n")
+	log.Println("QUIC Server successfully received '" + trimMsg + "'")
 	return msg, nil
 }
 
 
-/* handleStream */
-func handleStream(stream quic.Stream) (string, error) {
-	buf := make([]byte, 10)
-	_, err := io.ReadFull(stream, buf)
-	if err != nil { return "", err }
-
-	msg := string(buf)
-	return msg, nil
-}
-
-
-// generateTLSConfig
+/* generateTLSConfig */
 func generateTLSConfig() (*tls.Config) {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
@@ -136,17 +132,23 @@ func generateTLSConfig() (*tls.Config) {
 func tcpClient(msg string) (error) {
 	log.Println("Resolving remote server address...")
 	addr, err := net.ResolveTCPAddr("tcp", TCP_ADDR)
-	if err != nil { return errors.New("ResolveTCPAddr Failed: " + err.Error()) }
+	if err != nil { return errors.New("ResolveTCPAddr Failed --> " + err.Error()) }
 
 	log.Println("Dialing remote server address...")
 	conn, err := net.DialTCP("tcp", nil, addr)
-	defer conn.Close()
-	if err != nil { return errors.New("Dial Failed: " + err.Error()) }
+	if err != nil { return errors.New("Dial Failed --> " + err.Error()) }
 
+	return writeHandler(conn, msg)
+}
+
+
+/* writeHandler */
+func writeHandler(conn net.Conn, msg string) (error) {
 	log.Println("Forwarding message to remote server...")
-	_, err = conn.Write([]byte(msg))
-	if err != nil { return errors.New("Write Failed: " + err.Error()) }
+	_, err := conn.Write([]byte(msg))
+	if err != nil { return errors.New("Write Failed --> " + err.Error()) }
 
-	log.Println("TCP Client successfully sent '" + msg + "'")
+	trimMsg := strings.Trim(msg, "\n")
+	log.Println("TCP Client successfully sent '" + trimMsg + "'")
 	return nil
 }
